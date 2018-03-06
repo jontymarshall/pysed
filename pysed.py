@@ -279,7 +279,7 @@ def sed_catalog_search(target):
 	return [wave, phot, phot_e, notes]
 
 def pow_law(x,exp,C):
-	return 10**(exp*np.log10(x)+C)
+	return 10**(-2*np.log10(x)+C)
 
 def extrap1d(interpolator):
     xs = interpolator.x
@@ -337,7 +337,7 @@ def add_photometry(result,phot_arr):
 
 	return [wave, phot, phot_e, notes]
 
-def fit_sed(target,result,fit):
+def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 
 	wave, phot, phot_e, notes = list(result)
 
@@ -392,22 +392,44 @@ def fit_sed(target,result,fit):
 
 		return f1+f2
 
+	#--------------------
 
-	if fit.lower() == "single":
+	x1 = np.arange(0.1,2500,0.05)
+
+	if star_type.lower() == "bb":
 		#plot bb fit
-		x1 = np.arange(0.2,4000,0.05)
 
 		x0 = [5500,1]
-		id = np.where(wave < 10)
+		id = np.where(wave < 11)
 		starpopt, pcov = curve_fit(sed_bb,wave[id],phot[id],sigma=phot_e[id],p0=x0)
 
 		#starpopt = [5500,45]
-		f1 = sed_bb(x1,*starpopt)
+		starbb = sed_bb(wave,*starpopt)
+		fstar = sed_bb(x1,*starpopt)
+
+		plt.loglog(x1,fstar,'r-')
+
+		print 'Stellar Teff: '+str(starpopt[0])
+
+	elif star_type.lower() == "stellar":
+
+		id = np.where(wave < 11)
+		x_m,f_m,temp_str = chisqr_stellar_models(wave[id],phot[id],phot_e[id],star_models,pin_wave = 1.5)
+
+		print 'Stellar Teff: '+temp_str
+
+		starbb_func = interp1d(x_m,f_m)
+		starbb = starbb_func(wave)
+
+		fstar = starbb_func(x1)
+
+		plt.loglog(x_m,f_m,'r-')
+		
+	if nbb.lower() == "single":
 
 		#x0 = [300,1*10**6,150,1*10**7,210,1]
 		x0 = [50,1*10**6,210.0,0.0]
-		id = np.where(wave > 24)
-		starbb = sed_bb(wave,*starpopt)
+		id = np.where(wave > 12)
 
 		dustpopt, pcov = curve_fit(mod_sed_bb,wave[id],phot[id]-starbb[id],sigma=phot_e[id],p0=x0)
 		f2 = mod_sed_bb(x1,*dustpopt)
@@ -420,45 +442,33 @@ def fit_sed(target,result,fit):
 		ids = np.where(resid > 3*phot_e)
 		plt.loglog(wave[ids],resid[ids],'yo',markersize=5)
 
-		ftot = f1+f2
+		ftot = fstar+f2
 		#plt.loglog(x_m,f*x_m**2,'b-')
-		plt.loglog(x1,f1,'r--')
+		
 		plt.loglog(x1,f2,'g--')
 		plt.loglog(x1,ftot,'k-')
-		plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-1.0),'k--')
-		plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-2.0),'k-.')
+		#plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-1.0),'k--')
+		#plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-2.0),'k-.')
 
 		plt.loglog(wave,phot,'co')
 		plt.title(target)
-		plt.ylim([10**(-1),10**4])
-		plt.xlim([3*10**(-1),2*10**3])
+		plt.ylim([10**(-2),10**6])
+		#plt.xlim([1*10**(-2),2*10**3])
 
 		plt.xlabel('microns')
 		plt.ylabel('mJy')
 
-		print 'Stellar Teff: '+str(starpopt[0])
 		print 'Dust Teff: '+str(dustpopt[0])
 
-		print "Output File: "+str(target+'_'+fit+'.png')
-		plt.savefig(target+'_'+fit+'.png')
+		print "Output File: "+str(target+'_'+nbb+'.png')
+		plt.savefig(target+'_'+nbb+'.png')
 
-	elif fit.lower() == "double":
-	
-		#plot bb fit
-		x1 = np.arange(0.01,40000,0.05,dtype=np.float64)
+	elif nbb.lower() == "double":
 
-		x0 = [5500,35]
-		id = np.where(wave < 1)
-		starpopt, pcov = curve_fit(sed_bb,wave[id],phot[id],sigma=phot_e[id],p0=x0)
+		x0 = [100,1E6,60,1E7,120,0]
+		id = np.where(wave > 15)
 
-		#starpopt = [5500,45]
-		f1 = sed_bb(x1,*starpopt)
-
-		x0 = [100,1*10**6,60,1*10**7,120,0]
-		id = np.where(wave > 11)
-		starbb = sed_bb(wave,*starpopt)
-
-		dustpopt, dustpcov = curve_fit(dub_mod_sed_bb,wave[id],phot[id]-starbb[id],sigma=phot_e[id],p0=x0,maxfev=3000)
+		dustpopt, dustpcov = curve_fit(dub_mod_sed_bb,wave[id],phot[id]-starbb[id],sigma=phot_e[id],p0=x0,maxfev=10000)
 		f2 = dub_mod_sed_bb(x1,*dustpopt)
 
 		diskbb = dub_mod_sed_bb(wave,*dustpopt)
@@ -476,9 +486,7 @@ def fit_sed(target,result,fit):
 	
 		plt.loglog(wave,resid,'yo',markersize=2)
 
-		ftot = f1+f2
-
-		plt.loglog(x1,f1,'r--')
+		ftot = fstar+f2
 
 		diskbb1 = mod_sed_bb(x1,dustpopt[2],dustpopt[3],dustpopt[4],dustpopt[5])
 		diskbb2 = mod_sed_bb(x1,dustpopt[0],dustpopt[1],dustpopt[4],dustpopt[5])
@@ -494,8 +502,94 @@ def fit_sed(target,result,fit):
 		print 'Dust Teff: '+str(dustpopt[1])
 		print 'Dust Teff: '+str(dustpopt[3])
 
-		print "Output File: "+str(target+'_'+fit+'.png')
-		plt.savefig(target+'_'+fit+'.png')
+		print "Output File: "+str(target+'_'+nbb+'.png')
+		plt.savefig(target+'_'+nbb+'.png')
+
+def compile_stellar_models(folder):
+    import pyfits
+    import glob
+    
+    star_models = {}
+
+    files = glob.glob(folder+'lte*.fits')
+    if (np.size(files) < 1):
+	raise ValueError('No stellar models have been found. Go download them.')
+
+    for f in files:
+        print f
+        
+        hdulist = pyfits.open(f)
+        flx = hdulist[0].data
+        x = hdulist[0].header['CRVAL1']+np.arange(hdulist[0].header['NAXIS1'])*hdulist[0].header['CDELT1']
+        x_m = x.astype(np.float)*0.0001 #Ang to microns
+        flx = np.sum(flx,axis=0)*((x_m*10000)**2)/2.998E14 # convert to mJy
+        hdulist.close()
+
+        f2 = np.convolve(flx, np.ones((15,))/15)
+        sz1 = np.shape(flx)[0]
+        sz2 = np.shape(f2)[0]
+        bound = np.int(np.abs(sz1-sz2))
+        f2 = f2[bound:-bound-1]
+        x_m = x_m[bound/2:-bound/2-1]
+        #print np.size(x_m),np.size(f2)
+
+        rjtw = np.logspace(np.log10(np.max(x_m)),np.log10(2500),100)
+
+        rtpopt,rtpcov = curve_fit(pow_law,x_m[-1000:],f2[-1000:],p0=[2.00,9])
+
+        rjtf = pow_law(rjtw,*rtpopt)
+
+        f2 = np.append(f2,rjtf)
+        x_m = np.append(x_m,rjtw)
+
+        #plt.loglog(x_m,f2,'b-')
+        #plt.show
+        temp = np.float((str(f).replace(folder,'').split('-')[0]).replace('lte',''))
+
+        star_models[str(temp)] = np.vstack((x_m,f2))
 
 
+    return star_models
+
+def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave = 1.5):
+
+	model_flx = np.arange(np.size(star_wave))
+	temps = np.array([0])
+
+	for star in star_models.iteritems():
+    
+        	temp = star[0]
+        	x_m,f2 = star[1]
+
+        	func = interp1d(x_m,f2,kind='nearest')
+
+        	model_flx = np.vstack((model_flx,[func(star_wave)]))
+        	temps = np.vstack((temps,np.float(temp)))
+        
+
+	model_flx = model_flx[1:,0:]
+	temps = temps[1:,0:]
+
+	pin_id = np.where(np.min(star_wave-pin_wave) == (star_wave-pin_wave))
+
+	diff_flx = model_flx[0:,pin_id]/star_phot[pin_id]
+
+	#print diff_flx[0:,0]
+
+	diff_flx_arr = np.repeat(diff_flx[0:,0],np.shape(model_flx)[1],axis=1)
+
+	star_phot_arr = np.repeat([star_phot],np.shape(model_flx)[0],axis=0)
+	star_phot_e_arr = np.repeat([star_phot_e/star_phot**2],np.shape(model_flx)[0],axis=0)
+
+	#print (model_flx/diff_flx_arr-star_phot_arr)
+    
+	chisqr = np.sum(((model_flx/diff_flx_arr-star_phot_arr)**2)*star_phot_e_arr,axis=1)
+
+	min_id = np.where(np.min(chisqr) == chisqr)[0][0]
+	temp_str = str(temps[min_id][0])
+	model_diff = diff_flx[min_id][0][0]
+
+	x_m, f_m = star_models[temp_str]
+
+	return x_m,f_m/model_diff,temp_str
 	
