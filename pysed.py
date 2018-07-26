@@ -275,8 +275,10 @@ def sed_catalog_search(target):
 	
 
 	# END catalogs -------------------------------------
+	sed_data = [wave, phot, phot_e, notes]
+	print np.transpose(sed_data)
 
-	return [wave, phot, phot_e, notes]
+	return sed_data
 
 def pow_law(x,exp,C):
 	return 10**(-2*np.log10(x)+C)
@@ -337,7 +339,7 @@ def add_photometry(result,phot_arr):
 
 	return [wave, phot, phot_e, notes]
 
-def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
+def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=100):
 
 	wave, phot, phot_e, notes = list(result)
 
@@ -396,6 +398,8 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 
 	x1 = np.arange(0.1,2500,0.05)
 
+	fig, ax = plt.subplots(1,1,figsize=(8, 6),dpi=300)
+
 	if star_type.lower() == "bb":
 		#plot bb fit
 
@@ -407,7 +411,7 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 		starbb = sed_bb(wave,*starpopt)
 		fstar = sed_bb(x1,*starpopt)
 
-		plt.loglog(x1,fstar,'r-')
+		ax.loglog(x1,fstar,'r-')
 
 		print 'Stellar Teff: '+str(starpopt[0])
 
@@ -423,7 +427,7 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 
 		fstar = starbb_func(x1)
 
-		plt.loglog(x_m,f_m,'r-')
+		ax.loglog(x_m,f_m,'r-')
 		
 	if nbb.lower() == "single":
 
@@ -438,37 +442,30 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 		#residual points
 		resid = np.abs(phot-starbb-diskbb)
 		ids = np.where(resid < 3*phot_e)
-		plt.loglog(wave[ids],resid[ids],'yv',markersize=5)
+		ax.loglog(wave[ids],resid[ids],'yv',markersize=5)
 		ids = np.where(resid > 3*phot_e)
-		plt.loglog(wave[ids],resid[ids],'yo',markersize=5)
+		ax.loglog(wave[ids],resid[ids],'yo',markersize=5)
 
 		ftot = fstar+f2
-		#plt.loglog(x_m,f*x_m**2,'b-')
+		#ax.loglog(x_m,f*x_m**2,'b-')
 		
-		plt.loglog(x1,f2,'g--')
-		plt.loglog(x1,ftot,'k-')
-		#plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-1.0),'k--')
-		#plt.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-2.0),'k-.')
-
-		plt.loglog(wave,phot,'co')
-		plt.title(target)
-		plt.ylim([10**(-2),10**6])
-		#plt.xlim([1*10**(-2),2*10**3])
-
-		plt.xlabel('microns')
-		plt.ylabel('mJy')
+		ax.loglog(x1,f2,'g--')
+		ax.loglog(x1,ftot,'k-')
+		#ax.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-1.0),'k--')
+		#ax.loglog(x1,mod_sed_bb(x1,dustpopt[0],dustpopt[1],210,-2.0),'k-.')
 
 		print 'Dust Teff: '+str(dustpopt[0])
 
 		print "Output File: "+str(target+'_'+nbb+'.png')
-		plt.savefig(target+'_'+nbb+'.png')
 
 	elif nbb.lower() == "double":
 
-		x0 = [100,1E6,60,1E7,120,0]
-		id = np.where(wave > 15)
+		x0 = [200,1E6,50,1E7,210,0]
+		id = np.where(wave > 10)
 
-		dustpopt, dustpcov = curve_fit(dub_mod_sed_bb,wave[id],phot[id]-starbb[id],sigma=phot_e[id],p0=x0,maxfev=10000)
+		bounds = ((5,0,5,0,120,-5),(2000,np.inf,2000,np.inf,500,5))
+
+		dustpopt, dustpcov = curve_fit(dub_mod_sed_bb,wave[id],phot[id]-starbb[id],sigma=phot_e[id],p0=x0,bounds=bounds)
 		f2 = dub_mod_sed_bb(x1,*dustpopt)
 
 		diskbb = dub_mod_sed_bb(wave,*dustpopt)
@@ -478,32 +475,46 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={}):
 		resid = np.abs(phot-starbb-diskbb)
 		ids = np.where(resid < 3*phot_e)
 
-		plt.loglog(wave[ids],resid[ids],'yv',markersize=5)
+		ax.loglog(wave[ids],resid[ids],'yv',markersize=5)
 		ids = np.where(resid > 3*phot_e)
-		plt.loglog(wave[ids],resid[ids],'yo',markersize=5)
+		ax.loglog(wave[ids],resid[ids],'yo',markersize=5)
 
 		resid = np.abs(phot-starbb)
 	
-		plt.loglog(wave,resid,'yo',markersize=2)
+		ax.loglog(wave,resid,'yo',markersize=2)
 
 		ftot = fstar+f2
 
 		diskbb1 = mod_sed_bb(x1,dustpopt[2],dustpopt[3],dustpopt[4],dustpopt[5])
 		diskbb2 = mod_sed_bb(x1,dustpopt[0],dustpopt[1],dustpopt[4],dustpopt[5])
 
-		plt.loglog(x1,diskbb1,'g--')
-		plt.loglog(x1,diskbb2,'g--')
+		ax.loglog(x1,diskbb1,'g--')
+		ax.loglog(x1,diskbb2,'g--')
 
-		plt.loglog(x1,ftot,'k-',markersize=2)
-		plt.xlabel(r'wavelength ($\mu$m)',fontsize="20")
-		plt.ylabel('F (mJy)',fontsize="20")
+		ax.loglog(x1,ftot,'k-',markersize=2)
 
-		print 'Stellar Teff: '+str(starpopt[0])
-		print 'Dust Teff: '+str(dustpopt[1])
-		print 'Dust Teff: '+str(dustpopt[3])
+		frac_lum = (get_lum(x1,diskbb1,distance)+get_lum(x1,diskbb2,distance))/get_lum(x1,ftot,distance)
+
+		#print 'Stellar Teff: '+str(starpopt[0])
+		print 'Warm Dust Teff: '+"{:.2f}".format(dustpopt[0])
+		print 'Cold Dust Teff: '+"{:.2f}".format(dustpopt[2])
+		print 'Modified BB Wavelength: '+"{:.2f}".format(dustpopt[4])
+		print 'Modified BB Slope: '+"{:.2f}".format(dustpopt[5])
+		print 'Log Fractional Luminosity: '+"{:.2f}".format(np.log10(frac_lum))
+		#print dustpopt
 
 		print "Output File: "+str(target+'_'+nbb+'.png')
-		plt.savefig(target+'_'+nbb+'.png')
+		
+	ax.loglog(wave,phot,'co')
+	ax.set_xlabel(r'wavelength ($\mu$m)',fontsize="20")
+	ax.set_ylabel('F (mJy)',fontsize="20")
+	ax.set_title(target,fontsize="20")
+	ax.set_ylim([np.min(phot).value/10, np.max(phot).value*10])
+	ax.set_xlim([np.min(wave).value/10, np.max(wave).value*10])
+
+	plt.savefig(target+'_'+nbb+'.png')
+
+	return ax
 
 def compile_stellar_models(folder):
     import pyfits
@@ -535,7 +546,7 @@ def compile_stellar_models(folder):
 
         rjtw = np.logspace(np.log10(np.max(x_m)),np.log10(2500),100)
 
-        rtpopt,rtpcov = curve_fit(pow_law,x_m[-1000:],f2[-1000:],p0=[2.00,9])
+        rtpopt,rtpcov = curve_fit(pow_law,x_m[-2000:],f2[-2000:],p0=[2.00,9])
 
         rjtf = pow_law(rjtw,*rtpopt)
 
@@ -592,4 +603,13 @@ def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave =
 	x_m, f_m = star_models[temp_str]
 
 	return x_m,f_m/model_diff,temp_str
-	
+
+def get_lum(x1,f1,distance):
+	import numpy as np
+
+        lightspeed = 2.99792458*10**14 #micron/s        
+        fq = lightspeed/x1**2
+        f1b = (f1/10**29)*fq #(F_nu to F_lam)           
+        Jysum = np.trapz(x1,f1b)
+        return (Jysum*4*np.pi*distance**2)/(3.826*10**26)
+
