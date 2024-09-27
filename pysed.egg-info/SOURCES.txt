@@ -1,4 +1,12 @@
+LICENSE
+pysed.py
+pysed.pyc
 setup.py
+examples/example.ipynb
+examples/hd21997_double.png
+examples/hd21997_single.png
+examples/.ipynb_checkpoints/example-checkpoint.ipynb
+examples/PHEONIX/README
 pysed.egg-info/PKG-INFO
 pysed.egg-info/SOURCES.txt
 pysed.egg-info/dependency_links.txt
