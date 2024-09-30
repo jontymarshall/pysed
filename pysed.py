@@ -97,7 +97,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     
                     wave = np.append(wave,u_wave)
                     phot = np.append(phot,[f3p6,f4p5,f5p8,f8p0]*u.mJy)
-                    phot_e = np.append(phot_e,u_[e_f3p6,e_f4p5,e_f5p8,e_f8p0]*u.mJy)
+                    phot_e = np.append(phot_e,[e_f3p6,e_f4p5,e_f5p8,e_f8p0]*u.mJy)
                     notes = np.append(notes,['GLIMPSE 3p6','GLIMPSE 4p5','GLIMPSE 5p8','GLIMPSE 8p0'])
                     
             if cat == 'II/59B':
@@ -375,8 +375,11 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     notes = np.append(notes,['HPACS160'])
             
     # END catalogs -------------------------------------
-    sed_data = [wave, phot, phot_e, notes]
-    #print(np.transpose(sed_data))
+    
+    # remove nan values
+    fin = np.where(np.isfinite(phot_e))
+    sed_data = [wave[fin], phot[fin], phot_e[fin], notes[fin]]
+    print(np.transpose(sed_data))
 
     return sed_data
 
@@ -647,6 +650,9 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=10
         #print dustpopt
         
         print("Output File: "+str(target+'_'+nbb+'.png'))
+    
+    elif nbb.lower() == "none":
+        pass
     
     ax.loglog(wave,phot,'co')
     ax.set_xlabel(r'wavelength ($\mu$m)',fontsize="20")
