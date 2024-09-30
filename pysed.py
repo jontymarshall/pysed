@@ -70,13 +70,11 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     e_frp = np.abs(frp - e_frp)
                     
                     u_wave = ([504, 637, 762]*u.nm).to('micron')
-                    u_phot = np.array([fbp,fg,frp]*u.mJy)
-                    u_phot_e = np.array([e_fbp,e_fg,e_frp]*u.mJy)
                     
                     wave = np.append(wave,u_wave)
-                    phot = np.append(phot,u_phot)
-                    phot_e = np.append(phot_e,u_phot_e)
-                    notes = np.append(notes,['Gaia G','Gaia BP','Gaia RP'])
+                    phot = np.append(phot,[fbp,fg,frp]*u.mJy)
+                    phot_e = np.append(phot_e,[e_fbp,e_fg,e_frp]*u.mJy)
+                    notes = np.append(notes,['Gaia BP','Gaia G','Gaia RP'])
             
             if cat == 'II/293/glimpse':
                 v = Vizier(columns=['F(3.6)','e_F(3.6)','F(4.5)','e_F(4.5)','F(5.8)','e_F(5.8)','F(8.0)','e_F(8.0)'])
@@ -96,12 +94,10 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     e_f8p0 = res[0]['e_F(8.0)'][0]
                     
                     u_wave = ([3600, 4500, 5800, 8000,]*u.nm).to('micron')
-                    u_phot = np.array([f3p6,f4p5,f5p8,f8p0]*u.mJy)
-                    u_phot_e = np.array([e_f3p6,e_f4p5,e_f5p8,e_f8p0]*u.mJy)
                     
                     wave = np.append(wave,u_wave)
-                    phot = np.append(phot,u_phot)
-                    phot_e = np.append(phot_e,u_phot_e)
+                    phot = np.append(phot,[f3p6,f4p5,f5p8,f8p0]*u.mJy)
+                    phot_e = np.append(phot_e,u_[e_f3p6,e_f4p5,e_f5p8,e_f8p0]*u.mJy)
                     notes = np.append(notes,['GLIMPSE 3p6','GLIMPSE 4p5','GLIMPSE 5p8','GLIMPSE 8p0'])
                     
             if cat == 'II/59B':
