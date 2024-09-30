@@ -279,7 +279,7 @@ def sed_catalog_search(target):
         
     # END catalogs -------------------------------------
     sed_data = [wave, phot, phot_e, notes]
-    print(np.transpose(sed_data))
+    #print(np.transpose(sed_data))
 
     return sed_data
 
@@ -432,7 +432,7 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=10
         print('Stellar Teff: '+str(starpopt[0]))
         
     elif star_type.lower() == "stellar":
-        print(wave)
+        #print(wave)
         id = np.where(wave < 11)
         # print(id)
         # print(wave[id],phot[id],phot_e[id])
@@ -453,8 +453,8 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=10
         x0 = [50,1*10**6,210.0,0.0]
         id = np.where(wave > 11)
         
-        print(id)
-        print(wave[id],phot[id],starbb[id])
+        #print(id)
+        #print(wave[id],phot[id],starbb[id])
         
         dustpopt, pcov = curve_fit(mod_sed_bb,wave[id],phot[id].value-starbb[id],sigma=phot_e[id],p0=x0)
         f2 = mod_sed_bb(x1,*dustpopt)
@@ -548,7 +548,7 @@ def compile_stellar_models(folder):
         raise ValueError('No stellar models have been found. Go download them.')
 
     for f in files:
-        print(f)
+        #print(f)
         
         hdulist = fits.open(f)
         flx = hdulist[0].data
@@ -608,7 +608,7 @@ def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave =
     model_flx = model_flx[1:,0:]
     temps = temps[1:,0:]
     
-    print(star_wave,pin_wave)
+    #print(star_wave,pin_wave)
     
     #print(np.min(abs(star_wave.to('micron').value - pin_wave.value)))
     
@@ -630,11 +630,11 @@ def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave =
     # print("Diff flux ",diff_flx.value)
     # print("Star flux ",star_phot_arr)
     
-    print(model_flx.shape,model_flx)
-    print(diff_flx_arr.shape,diff_flx_arr)
-    print(star_phot_arr.shape,star_phot_arr)
+    #print(model_flx.shape,model_flx)
+    #print(diff_flx_arr.shape,diff_flx_arr)
+    #print(star_phot_arr.shape,star_phot_arr)
     
-    print((model_flx/diff_flx_arr)-star_phot_arr)
+    #print((model_flx/diff_flx_arr)-star_phot_arr)
     
     chisqr = np.sum(((model_flx/diff_flx_arr-star_phot_arr)**2)*star_phot_e_arr,axis=1)
 
