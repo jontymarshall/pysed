@@ -52,46 +52,53 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                 res = v.query_object(target,catalog=[cat])
                 
                 if not not res:
+                    
+                    fbp = res[0]['BPmag'][0]
+                    e_fbp = res[0]['e_BPmag'][0]
+                    
                     fg = res[0]['Gmag'][0]
                     e_fg = res[0]['e_Gmag'][0]
                     
                     frp = res[0]['RPmag'][0]
                     e_frp = res[0]['e_RPmag'][0]
                     
-                    fbp = res[0]['BPmag'][0]
-                    e_fbp = res[0]['e_BPmag'][0]
+                    fbp_e = mag2mJy(fbp+e_fbp,3552)
+                    fg_e  = mag2mJy(fg+e_fg,3296)
+                    frp_e = mag2mJy(frp+e_frp,2555)
                     
-                    e_fbp = mag2mJy(fbp+e_fbp,3552)
-                    e_fg  = mag2mJy(fg+e_fg,3296)
-                    e_frp = mag2mJy(frp+e_frp,2555)
+                    fbp = mag2mJy(fbp,3552)
+                    fg  = mag2mJy(fg,3296)
+                    frp = mag2mJy(frp,2555)
                     
-                    e_fbp = np.abs(fbp - e_fbp)
-                    e_fg  = np.abs(fg - e_fg)
-                    e_frp = np.abs(frp - e_frp)
+                    u_fbp = abs(fbp - fbp_e)
+                    u_fg  = abs(fg - fg_e)
+                    u_frp = abs(frp - frp_e)
                     
                     u_wave = ([504, 637, 762]*u.nm).to('micron')
                     
                     wave = np.append(wave,u_wave)
                     phot = np.append(phot,[fbp,fg,frp]*u.mJy)
-                    phot_e = np.append(phot_e,[e_fbp,e_fg,e_frp]*u.mJy)
+                    phot_e = np.append(phot_e,[u_fbp,u_fg,u_frp]*u.mJy)
                     notes = np.append(notes,['Gaia BP','Gaia G','Gaia RP'])
             
             if cat == 'II/293/glimpse':
                 v = Vizier(columns=['F(3.6)','e_F(3.6)','F(4.5)','e_F(4.5)','F(5.8)','e_F(5.8)','F(8.0)','e_F(8.0)'])
                 res = v.query_object(target,catalog=[cat])
                 
+                
                 if not not res:
-                    f3p6 = res[0]['F(3.6)'][0]
-                    e_f3p6 = res[0]['e_F(3.6)'][0]
                     
-                    f4p5 = res[0]['F(4.5)'][0]
-                    e_f4p5 = res[0]['e_F(4.5)'][0]
+                    f3p6 = res[0]['F_3.6_'][0]
+                    e_f3p6 = res[0]['e_F_3.6_'][0]
                     
-                    f5p8 = res[0]['F(5.8)'][0]
-                    e_f5p8 = res[0]['e_F(5.8)'][0]
+                    f4p5 = res[0]['F_4.5_'][0]
+                    e_f4p5 = res[0]['e_F_4.5_'][0]
                     
-                    f8p0 = res[0]['F(8.0)'][0]
-                    e_f8p0 = res[0]['e_F(8.0)'][0]
+                    f5p8 = res[0]['F_5.8_'][0]
+                    e_f5p8 = res[0]['e_F_5.8_'][0]
+                    
+                    f8p0 = res[0]['F_8.0_'][0]
+                    e_f8p0 = res[0]['e_F_8.0_'][0]
                     
                     u_wave = ([3600, 4500, 5800, 8000,]*u.nm).to('micron')
                     
@@ -105,6 +112,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                 res = v.query_object(target,catalog=[cat])
                 
                 if not not res:
+                    
                     TD1_2740 = res[0]['F2740'][0]
                     TD1_2740_e = res[0]['e_F2740'][0]
                     
@@ -162,8 +170,8 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     tychoB = mag2mJy(tychoB,4130)
                     tychoV = mag2mJy(tychoV,3781)
                     
-                    tychoB_e = np.abs(tychoB - tychoB_e)
-                    tychoV_e = np.abs(tychoV - tychoV_e)
+                    tychoB_e = abs(tychoB - tychoB_e)
+                    tychoV_e = abs(tychoV - tychoV_e)
                     
                     # print("Tycho")
                     # print(tychoV,tychoB)
@@ -194,8 +202,8 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     asasV = mag2mJy(asasV,3781)
                     asasI = mag2mJy(asasI,2635)
                     
-                    asasV_e = np.abs(asasV - asasV_e)
-                    asasI_e = np.abs(asasI - asasI_e)
+                    asasV_e = abs(asasV - asasV_e)
+                    asasI_e = abs(asasI - asasI_e)
                     
                     # print("ROSAT")
                     # print(asasV,asasI)
@@ -235,9 +243,9 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     twomassH = mag2mJy(twomassH,1024)
                     twomassK = mag2mJy(twomassK,666.7)
                     
-                    twomassJ_e = np.abs(twomassJ - twomassJ_e)
-                    twomassH_e = np.abs(twomassH - twomassH_e)
-                    twomassK_e = np.abs(twomassK - twomassK_e)
+                    twomassJ_e = abs(twomassJ - twomassJ_e)
+                    twomassH_e = abs(twomassH - twomassH_e)
+                    twomassK_e = abs(twomassK - twomassK_e)
                     
                     # print("2MASS")
                     # print(twomassJ,twomassH,twomassK)
