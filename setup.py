@@ -14,8 +14,7 @@ setup(name='pysed',
 
 		'License :: OSI Approved :: BSD License',
 
-		'Programming Language :: Python :: 2.7',
-		'Programming Language :: Python :: 3.5',
+		'Programming Language :: Python :: 3.10',
 		],
 	install_requires=['numpy', 'scipy', 'astropy', 'astroquery', 'matplotlib', 'extinction']
 )
