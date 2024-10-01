@@ -12,18 +12,13 @@ from scipy.interpolate import interp1d
 from scipy import arange, array, exp
 from scipy.interpolate import InterpolatedUnivariateSpline
 import copy
+from extinction import apply, remove, fitzpatrick99
 
-def dered_extinc(wave,mag,color):
-    wave = 1/wave # inverse microns
+def dered_extinc(wave,flux,Rv=3.1,Av=1.0):
     
-    inv_lam = [0.00,0.377,0.820,1.667,1.828,2.141,2.433,3.0704,3.846]
-    extn_ratio = [0.00,0.265,0.829,2.688,3.055,3.806,4.315,6.625,6.591]
-
-    f = interp1d(inv_lam, extn_ratio, kind='cubic')
+    dered = remove(fitzpatrick99(wave.to('AA'), Av, Rv,unit='aa'), flux)
     
-    print('org: ',mag,'f: ',f(1/wave),'new: ',mag+f(1/wave)*color)
-
-    return mag+f(1/wave)*color
+    return dered
 
 def mag2mJy(mag,f_zpt):
     return f_zpt*10**(mag/(-2.5))*1000
@@ -49,7 +44,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
         else: 
             if cat == 'I/355/gaiadr3':
                 v = Vizier(columns=['Gmag','e_Gmag','BPmag','e_BPmag','RPmag','e_RPmag'])
-                res = v.query_object(target,catalog=[cat])
+                res = v.query_object(target,catalog=[cat],radius=Angle(3, "arcsec"))
                 
                 if not not res:
                     
@@ -83,7 +78,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
             
             if cat == 'II/293/glimpse':
                 v = Vizier(columns=['F(3.6)','e_F(3.6)','F(4.5)','e_F(4.5)','F(5.8)','e_F(5.8)','F(8.0)','e_F(8.0)'])
-                res = v.query_object(target,catalog=[cat])
+                res = v.query_object(target,catalog=[cat],radius=Angle(3, "arcsec"))
                 
                 
                 if not not res:
@@ -109,7 +104,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
                     
             if cat == 'II/59B':
                 v = Vizier(columns=['F2740','e_F2740','F2365','e_F2365','F1965','e_F1965','F1565','e_F1565'])
-                res = v.query_object(target,catalog=[cat])
+                res = v.query_object(target,catalog=[cat],radius=Angle(3, "arcsec"))
                 
                 if not not res:
                     
@@ -144,7 +139,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
             #Tycho Catalog --------------------
             if cat == 'I/259':
                 v = Vizier(columns=['BTmag','e_BTmag','VTmag','e_VTmag'])
-                res = v.query_object(target,catalog=[cat])
+                res = v.query_object(target,catalog=[cat],radius=Angle(3, "arcsec"))
                 
                 if not not res:
                     tycho_wave = ([4400,5500,]*u.AA).to('micron')
@@ -185,7 +180,7 @@ def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246
             #ASAA of ROSAT Catalog --------------------
             if cat == 'J/AcA/62/67':
                 v = Vizier(columns=['__Vmag_','__Imag_','sVmag','sImag'])
-                res = v.query_object(target,catalog=[cat])
+                res = v.query_object(target,catalog=[cat],radius=Angle(3, "arcsec"))
                 
                 if not not res:
                     asas_wave = ([5500,9700,]*u.AA).to('micron')
@@ -455,7 +450,7 @@ def add_photometry(result,phot_arr):
     
     return [wave, phot, phot_e, notes]
 
-def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=100):
+def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=100,extinction=False):
     
     wave, phot, phot_e, notes = list(result)
     
@@ -473,6 +468,9 @@ def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=10
         phot_e = phot_e.value
     except:
         pass
+    
+    if extinction:
+        phot = dered_extinc(wave*u.micron,phot,Rv=3.1,Av=distance/1000.) #Av ~ 1 mag/kpc in optical
     
     # print("Photometry for ",target)
     # print(wave,phot,phot_e)
