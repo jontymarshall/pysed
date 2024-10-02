@@ -780,8 +780,6 @@ def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave =
     
     pin_id = np.where(np.min(abs(star_wave - pin_wave.value)) == abs(star_wave - pin_wave.value))
     
-    print('Y',pin_id,len(pin_id[0]))
-    
     if len(pin_id[0]) != 1:
         pin_id = ([np.array(pin_id[0][0])],)
         
