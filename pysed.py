@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import sys
 from scipy.interpolate import interp1d
 from astropy import units as u
+from astropy import constants as c
+from astropy.io import ascii,fits,votable
 from scipy.optimize import curve_fit
 from scipy.integrate import simps
 from scipy.io import readsav
@@ -23,6 +25,21 @@ def dered_extinc(wave,flux,Rv=3.1,Av=1.0):
 def mag2mJy(mag,f_zpt):
     return f_zpt*10**(mag/(-2.5))*1000
 
+def sed_vizier_votable(vot_file):
+    
+    votd = votable.parse(vot_file).get_first_table()
+    wavs =(c.c / (1e9*votd.array['_sed_freq'].data/u.s)).to('micron')
+    
+    pick = np.where((votd.array['_sed_eflux'].mask == False)&(votd.array['_sed_eflux'].data != 0.)&(wavs < 2499*u.micron))
+    wave = wavs[pick]
+    phot = votd.array['_sed_flux'].data[pick]*u.Jy
+    phot_e = votd.array['_sed_eflux'].data[pick]*u.Jy
+    notes = votd.array['_sed_filter'].data[pick]
+    
+    fin = np.where(np.isfinite(phot_e))
+    sed_data = [wave[fin], phot[fin], phot_e[fin], notes[fin]]
+    
+    return sed_data
 
 def sed_catalog_search(target,catalogues=['II/59B','I/259','J/AcA/62/67','II/246','J/ApJS/211/25/catalog','II/328/allwise','II/297','VIII/106/hppsc070','VIII/106/hppsc100','VIII/106/hppsc160']):
     
@@ -448,6 +465,13 @@ def add_photometry(result,phot_arr):
     phot_e = np.append(phot_e,phot_arr[2])
     notes = np.append(notes,phot_arr[3])
     
+    noinf = np.isfinite(wave)
+    
+    wave = wave[noinf]
+    phot = phot[noinf]
+    phot_e = phot_e[noinf]
+    notes = notes[noinf]
+    
     return [wave, phot, phot_e, notes]
 
 def fit_sed(target,result,nbb='single',star_type='bb',star_models={},distance=100,extinction=False):
@@ -756,10 +780,16 @@ def chisqr_stellar_models(star_wave,star_phot,star_phot_e,star_models,pin_wave =
     
     pin_id = np.where(np.min(abs(star_wave - pin_wave.value)) == abs(star_wave - pin_wave.value))
     
+    print('Y',pin_id,len(pin_id[0]))
+    
+    if len(pin_id[0]) != 1:
+        pin_id = ([np.array(pin_id[0][0])],)
+        
+    
     #print(star_phot[pin_id])
     #print(model_flx[0:,pin_id])
     
-    diff_flx = (model_flx[0:,pin_id]/star_phot[pin_id])
+    diff_flx = model_flx[0:,pin_id]/star_phot[pin_id]
     
     #print diff_flx[0:,0]
     
