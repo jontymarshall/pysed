@@ -3,3 +3,4 @@
 *.egg
 *.txt
 /pysed.egg-info
+/__pycache__
